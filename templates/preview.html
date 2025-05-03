@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.title }} - 미리보기</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="mt-4 mb-5">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="fw-bold">스크랩 결과 미리보기</h1>
+                <a href="/" class="btn btn-outline-secondary">처음으로</a>
+            </div>
+            <hr>
+        </header>
+
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">포스트 정보</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold">스크랩 URL:</div>
+                            <div class="col-md-9">
+                                <a href="{{ data.url }}" target="_blank">{{ data.url }}</a>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold">앱 정보:</div>
+                            <div class="col-md-9">{{ data.app_info }}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold">카테고리:</div>
+                            <div class="col-md-9">{{ data.category }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">포스트 내용</h5>
+                    </div>
+                    <div class="card-body">
+                        <h2 class="mb-4">{{ data.title }}</h2>
+                        <div class="post-content">
+                            {{ data.content|safe }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="/" class="btn btn-outline-secondary">입력 수정</a>
+                    <button id="postBtn" class="btn btn-success btn-lg">블로그에 포스팅</button>
+                </div>
+
+                <!-- 알림 메시지 -->
+                <div class="alert alert-success mt-4 d-none" id="successAlert" role="alert"></div>
+                <div class="alert alert-danger mt-4 d-none" id="errorAlert" role="alert"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const postBtn = document.getElementById('postBtn');
+            const successAlert = document.getElementById('successAlert');
+            const errorAlert = document.getElementById('errorAlert');
+
+            postBtn.addEventListener('click', function() {
+                postBtn.disabled = true;
+                postBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 포스팅 중...';
+                
+                fetch('/post', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        successAlert.textContent = data.message;
+                        successAlert.classList.remove('d-none');
+                        
+                        if (data.post_url) {
+                            // 성공 메시지에 링크 추가
+                            successAlert.innerHTML = `${data.message} <a href="${data.post_url}" target="_blank" class="alert-link">게시글 보기</a>`;
+                        }
+                        
+                        errorAlert.classList.add('d-none');
+                        postBtn.innerHTML = '포스팅 완료!';
+                        postBtn.classList.remove('btn-success');
+                        postBtn.classList.add('btn-outline-success');
+                    } else {
+                        errorAlert.textContent = data.message;
+                        errorAlert.classList.remove('d-none');
+                        successAlert.classList.add('d-none');
+                        postBtn.innerHTML = '다시 시도';
+                        postBtn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    errorAlert.textContent = '요청 중 오류가 발생했습니다: ' + error.message;
+                    errorAlert.classList.remove('d-none');
+                    successAlert.classList.add('d-none');
+                    postBtn.innerHTML = '다시 시도';
+                    postBtn.disabled = false;
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

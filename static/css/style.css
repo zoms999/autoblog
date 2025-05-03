@@ -1,0 +1,101 @@
+/* 메인 스타일 */
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 카드 스타일 */
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+    margin-bottom: 30px;
+}
+
+.card-header {
+    font-weight: bold;
+    padding: 15px 20px;
+}
+
+.card-body {
+    padding: 25px;
+}
+
+/* 버튼 스타일 */
+.btn {
+    border-radius: 5px;
+    font-weight: 500;
+    padding: 8px 20px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #4a6bdf;
+    border-color: #4a6bdf;
+}
+
+.btn-primary:hover {
+    background-color: #3a5bce;
+    border-color: #3a5bce;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+/* 포스트 내용 스타일 */
+.post-content {
+    line-height: 1.8;
+}
+
+.post-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+
+.post-content h3 {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    color: #4a6bdf;
+}
+
+.post-content p {
+    margin-bottom: 15px;
+}
+
+/* 알림 스타일 */
+.alert {
+    border-radius: 5px;
+    padding: 15px 20px;
+}
+
+/* 반응형 스타일 */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .card-body {
+        padding: 15px;
+    }
+}
+
+/* 로딩 애니메이션 */
+.spinner-border {
+    margin-right: 10px;
+} 
