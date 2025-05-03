@@ -5,6 +5,7 @@ import os
 import re
 import logging
 import random
+from bs4 import BeautifulSoup
 from PIL import Image
 from datetime import datetime
 
@@ -96,10 +97,34 @@ class ContentProcessor:
     
     def _process_content(self, original_content, images, app_info, source_url):
         """내용 처리 및 HTML 변환"""
-        # 본문 구성을 위한 준비
-        paragraphs = original_content.split('\n\n')
+        # 원본 URL 보존 확인
+        logger.info(f"컨텐츠 처리 - 소스 URL: {source_url}")
+        
+        # 원본 내용이 HTML인지 확인
+        is_html = bool(re.search(r'<\s*[a-z]+[^>]*>', original_content))
+        
+        # HTML 파싱
+        if is_html:
+            try:
+                # BeautifulSoup으로 HTML 파싱 시도
+                soup = BeautifulSoup(original_content, 'lxml')
+                
+                # 불필요한 요소 제거 (스크립트, 스타일 등)
+                for tag in soup.find_all(['script', 'style', 'iframe', 'nav', 'footer', 'aside']):
+                    tag.decompose()
+                
+                # 원본 HTML에서 본문 추출
+                processed_html = str(soup)
+            except Exception as e:
+                logger.warning(f"HTML 파싱 실패: {str(e)}. 원본 HTML을 사용합니다.")
+                processed_html = original_content
+        else:
+            # 텍스트를 HTML로 변환
+            paragraphs = original_content.split('\n\n')
+            processed_html = "\n".join([f"<p>{p}</p>" for p in paragraphs if p.strip()])
         
         # HTML 구성 시작
+        soup = BeautifulSoup(processed_html, 'lxml')
         html_parts = []
         
         # 도입부 추가
@@ -112,50 +137,72 @@ class ContentProcessor:
             img_tag = f'<p><img src="{main_image["url"]}" alt="{main_image["alt"]}" title="{app_info}" class="img-fluid" /></p>'
             html_parts.append(img_tag)
         
-        # 본문 내용 처리
-        current_heading = None
-        for i, para in enumerate(paragraphs):
-            # 단락 길이가 너무 짧으면 건너뛰기
-            if len(para.strip()) < 20:
-                continue
-                
-            # 10번째 단락마다 랜덤하게 이미지 삽입
-            if i > 0 and i % 10 == 0 and len(images) > 1:
-                img_index = (i // 10) % (len(images) - 1) + 1
-                if img_index < len(images):
-                    img = images[img_index]
-                    img_tag = f'<p><img src="{img["url"]}" alt="{img["alt"]}" title="{app_info}" class="img-fluid" /></p>'
-                    html_parts.append(img_tag)
+        # 원본 HTML 컨텐츠 추가
+        html_parts.append(processed_html)
+        
+        # 나머지 이미지 처리 및 삽입 (첫 번째 이미지는 이미 사용했으므로 제외)
+        if len(images) > 1:
+            remaining_images = images[1:]
+            html = "\n".join(html_parts)
+            soup = BeautifulSoup(html, 'lxml')
             
-            # 대문자나 숫자로 시작하고 짧은 단락은 제목으로 처리
-            if (para[0].isupper() or para[0].isdigit()) and len(para) < 60 and "." not in para:
-                current_heading = para
-                html_parts.append(f"<h3>{para}</h3>")
-            else:
-                # 앱 정보를 강조 표시
-                if app_info in para:
-                    para = para.replace(app_info, f"<strong>{app_info}</strong>")
-                
-                html_parts.append(f"<p>{para}</p>")
-                
-            # 단락 끝에 랜덤하게 강조 문구 추가
-            if i > 0 and i % 15 == 0:
-                emphasis = [
-                    f"<p><em>{app_info}의 이 기능은 정말 유용합니다!</em></p>",
-                    f"<p><strong>특히 주목할 점은 {app_info}의 사용 편의성입니다.</strong></p>",
-                    f"<p><mark>이 부분은 {app_info}의 핵심 기능입니다.</mark></p>"
-                ]
-                html_parts.append(random.choice(emphasis))
+            # 컨텐츠 내의 단락 찾기
+            paragraphs = soup.find_all('p')
+            
+            # 이미지 삽입 간격 계산 (단락 수에 따라 조정)
+            if len(paragraphs) >= len(remaining_images) * 2:
+                # 적절한 간격으로 이미지 삽입
+                interval = max(1, len(paragraphs) // len(remaining_images))
+                for i, img in enumerate(remaining_images):
+                    pos = min((i + 1) * interval, len(paragraphs) - 1)
+                    img_tag = soup.new_tag("p")
+                    img_element = soup.new_tag("img", src=img["url"], alt=img["alt"], title=app_info, **{"class": "img-fluid"})
+                    img_tag.append(img_element)
+                    
+                    # 이미지 삽입
+                    if pos < len(paragraphs):
+                        paragraphs[pos].insert_after(img_tag)
+            
+            # 수정된 HTML 생성
+            html_parts = [str(soup)]
+        
+        # 앱 정보 강조
+        html = "\n".join(html_parts)
+        soup = BeautifulSoup(html, 'lxml')
+        
+        # 앱 정보를 강조 표시
+        for text in soup.find_all(text=re.compile(re.escape(app_info))):
+            if text.parent.name not in ['strong', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+                new_text = text.replace(app_info, f"<strong>{app_info}</strong>")
+                new_soup = BeautifulSoup(new_text, 'lxml')
+                text.replace_with(new_soup)
         
         # 맺음말 추가
-        outro = random.choice(self.outro_phrases).format(app_info)
-        html_parts.append(f"<p>{outro}</p>")
+        outro_tag = soup.new_tag("p")
+        outro_tag.string = random.choice(self.outro_phrases).format(app_info)
+        soup.append(outro_tag)
         
-        # 출처 표시 (옵션)
-        html_parts.append(f'<p><small>참고: <a href="{source_url}" target="_blank" rel="nofollow">{source_url}</a></small></p>')
+        # 출처 표시 (원본 URL 사용)
+        source_tag = soup.new_tag("p")
+        source_tag.append(soup.new_tag("small"))
+        source_tag.small.string = "참고: "
+        
+        # URL 유효성 검증
+        if not source_url.startswith(('http://', 'https://')):
+            logger.warning(f"유효하지 않은 소스 URL: {source_url}")
+            source_url = "https://" + source_url if source_url else "출처 정보 없음"
+        
+        link = soup.new_tag("a", href=source_url, target="_blank", rel="nofollow")
+        link.string = source_url
+        source_tag.small.append(link)
+        
+        # 출처 로깅
+        logger.info(f"컨텐츠 출처 URL: {source_url}")
+        
+        soup.append(source_tag)
         
         # 최종 HTML 컨텐츠 생성
-        html_content = "\n".join(html_parts)
+        html_content = str(soup.body).replace("<body>", "").replace("</body>", "") if soup.body else str(soup)
         
         return html_content
         

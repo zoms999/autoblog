@@ -6,6 +6,9 @@
     <title>{{ data.title }} - 미리보기</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- TinyMCE 에디터 -->
+    <script src="https://cdn.tiny.cloud/1/nent5fr9lbjkhe8u46syvqv601m8szh5w5y7ib5jl89ctjt0/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/nent5fr9lbjkhe8u46syvqv601m8szh5w5y7ib5jl89ctjt0/tinymce/6/langs/ko_KR.js" referrerpolicy="origin"></script>
 </head>
 <body>
     <div class="container">
@@ -38,17 +41,125 @@
                             <div class="col-md-3 fw-bold">카테고리:</div>
                             <div class="col-md-9">{{ data.category }}</div>
                         </div>
+                        
+                        {% if data.referrer or data.invite_code %}
+                        <div class="row mb-3">
+                            {% if data.referrer %}
+                            <div class="col-md-3 fw-bold">추천인:</div>
+                            <div class="col-md-9">{{ data.referrer }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            {% if data.invite_code %}
+                            <div class="col-md-3 fw-bold">초대코드:</div>
+                            <div class="col-md-9">{{ data.invite_code }}</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-3 fw-bold">수정 상태:</div>
+                            <div class="col-md-9">
+                                {% if data.is_rewritten %}
+                                <span class="badge bg-info">AI 재작성됨</span>
+                                {% endif %}
+                                
+                                {% if data.is_edited %}
+                                <span class="badge bg-primary">수동 편집됨</span>
+                                {% endif %}
+                                
+                                {% if not data.is_rewritten and not data.is_edited %}
+                                <span class="badge bg-secondary">원본</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card shadow mt-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">포스트 내용</h5>
+                <!-- AI 재작성 카드 (AI가 사용 가능한 경우에만 표시) -->
+                {% if is_ai_available %}
+                <div class="card shadow mt-4 mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">AI 컨텐츠 재작성</h5>
                     </div>
                     <div class="card-body">
-                        <h2 class="mb-4">{{ data.title }}</h2>
-                        <div class="post-content">
-                            {{ data.content|safe }}
+                        <p>AI를 사용하여 컨텐츠를 재작성하면 더 자연스러운 문장과 표현으로 저작권 문제를 방지할 수 있습니다.</p>
+                        
+                        <div class="mb-3">
+                            <label for="rewriteGoal" class="form-label">재작성 목표</label>
+                            <input type="text" class="form-control" id="rewriteGoal" value="자연스러운 문장과 표현으로 저작권에 문제없게 재작성">
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button id="rewriteBtn" class="btn btn-info text-white">
+                                <span class="spinner-border spinner-border-sm d-none" id="rewriteSpinner" role="status" aria-hidden="true"></span>
+                                AI로 컨텐츠 재작성
+                            </button>
+                            
+                            {% if data.is_rewritten %}
+                            <button id="restoreBtn" class="btn btn-outline-secondary">원본으로 복원</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">포스트 내용</h5>
+                        <button id="editToggleBtn" class="btn btn-sm btn-outline-light">
+                            <span id="editBtnText">편집하기</span>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <!-- 보기 모드 -->
+                        <div id="viewMode">
+                            <h2 class="mb-4">{{ data.title }}</h2>
+                            <div class="post-content">
+                                {{ data.content|safe }}
+                            </div>
+                        </div>
+                        
+                        <!-- 편집 모드 (초기에는 숨김) -->
+                        <div id="editMode" class="d-none">
+                            <div class="mb-3">
+                                <label for="editTitle" class="form-label">제목</label>
+                                <input type="text" class="form-control" id="editTitle" value="{{ data.title }}">
+                            </div>
+                            
+                            <!-- 편집 모드 선택 탭 -->
+                            <ul class="nav nav-tabs mb-3" id="editorTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="visual-tab" data-bs-toggle="tab" data-bs-target="#visual-editor" type="button" role="tab" aria-controls="visual-editor" aria-selected="true">시각적 편집</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="html-tab" data-bs-toggle="tab" data-bs-target="#html-editor" type="button" role="tab" aria-controls="html-editor" aria-selected="false">HTML 코드</button>
+                                </li>
+                            </ul>
+                            
+                            <!-- 편집기 내용 -->
+                            <div class="tab-content" id="editorTabsContent">
+                                <!-- 시각적 에디터 -->
+                                <div class="tab-pane fade show active" id="visual-editor" role="tabpanel" aria-labelledby="visual-tab">
+                                    <textarea id="wysiwygEditor">{{ data.content|safe }}</textarea>
+                                </div>
+                                
+                                <!-- HTML 코드 에디터 -->
+                                <div class="tab-pane fade" id="html-editor" role="tabpanel" aria-labelledby="html-tab">
+                                    <div class="mb-3">
+                                        <textarea class="form-control" id="editContent" rows="15" style="font-family: monospace;">{{ data.content|safe }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end gap-2 mt-3">
+                                <button id="cancelEditBtn" class="btn btn-outline-secondary">취소</button>
+                                <button id="saveEditBtn" class="btn btn-primary">
+                                    <span class="spinner-border spinner-border-sm d-none" id="editSpinner" role="status" aria-hidden="true"></span>
+                                    저장하기
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -71,7 +182,13 @@
             const postBtn = document.getElementById('postBtn');
             const successAlert = document.getElementById('successAlert');
             const errorAlert = document.getElementById('errorAlert');
+            
+            // AI 재작성 관련 요소
+            const rewriteBtn = document.getElementById('rewriteBtn');
+            const rewriteSpinner = document.getElementById('rewriteSpinner');
+            const restoreBtn = document.getElementById('restoreBtn');
 
+            // 포스팅 버튼 이벤트 핸들러
             postBtn.addEventListener('click', function() {
                 postBtn.disabled = true;
                 postBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 포스팅 중...';
@@ -111,6 +228,283 @@
                     successAlert.classList.add('d-none');
                     postBtn.innerHTML = '다시 시도';
                     postBtn.disabled = false;
+                });
+            });
+            
+            // AI 재작성 버튼 이벤트 핸들러
+            if (rewriteBtn) {
+                rewriteBtn.addEventListener('click', function() {
+                    // 재작성 목표 가져오기
+                    const goal = document.getElementById('rewriteGoal').value;
+                    
+                    // 버튼 상태 변경
+                    rewriteBtn.disabled = true;
+                    rewriteSpinner.classList.remove('d-none');
+                    
+                    // 알림 초기화
+                    successAlert.classList.add('d-none');
+                    errorAlert.classList.add('d-none');
+                    
+                    // 재작성 API 호출
+                    fetch('/rewrite', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `goal=${encodeURIComponent(goal)}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // 버튼 상태 복원
+                        rewriteBtn.disabled = false;
+                        rewriteSpinner.classList.add('d-none');
+                        
+                        if (data.success) {
+                            // 성공 메시지 표시
+                            successAlert.textContent = data.message;
+                            successAlert.classList.remove('d-none');
+                            errorAlert.classList.add('d-none');
+                            
+                            // 페이지 새로고침 (변경된 내용 표시)
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            // 실패 메시지 표시
+                            errorAlert.textContent = data.message;
+                            errorAlert.classList.remove('d-none');
+                            successAlert.classList.add('d-none');
+                        }
+                    })
+                    .catch(error => {
+                        rewriteBtn.disabled = false;
+                        rewriteSpinner.classList.add('d-none');
+                        
+                        errorAlert.textContent = '요청 중 오류가 발생했습니다: ' + error.message;
+                        errorAlert.classList.remove('d-none');
+                        successAlert.classList.add('d-none');
+                    });
+                });
+            }
+            
+            // 원본 복원 버튼 이벤트 핸들러
+            if (restoreBtn) {
+                restoreBtn.addEventListener('click', function() {
+                    restoreBtn.disabled = true;
+                    
+                    // 원본 복원 API 호출
+                    fetch('/restore', {
+                        method: 'POST'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        restoreBtn.disabled = false;
+                        
+                        if (data.success) {
+                            // 성공 메시지 표시
+                            successAlert.textContent = data.message;
+                            successAlert.classList.remove('d-none');
+                            errorAlert.classList.add('d-none');
+                            
+                            // 페이지 새로고침 (원본 내용 표시)
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            // 실패 메시지 표시
+                            errorAlert.textContent = data.message;
+                            errorAlert.classList.remove('d-none');
+                            successAlert.classList.add('d-none');
+                        }
+                    })
+                    .catch(error => {
+                        restoreBtn.disabled = false;
+                        
+                        errorAlert.textContent = '요청 중 오류가 발생했습니다: ' + error.message;
+                        errorAlert.classList.remove('d-none');
+                        successAlert.classList.add('d-none');
+                    });
+                });
+            }
+            
+            // 편집 모드 관련 요소
+            const editToggleBtn = document.getElementById('editToggleBtn');
+            const editBtnText = document.getElementById('editBtnText');
+            const viewMode = document.getElementById('viewMode');
+            const editMode = document.getElementById('editMode');
+            const editTitle = document.getElementById('editTitle');
+            const editContent = document.getElementById('editContent');
+            const wysiwygEditor = document.getElementById('wysiwygEditor');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+            const saveEditBtn = document.getElementById('saveEditBtn');
+            const editSpinner = document.getElementById('editSpinner');
+            const htmlTab = document.getElementById('html-tab');
+            const visualTab = document.getElementById('visual-tab');
+            
+            // TinyMCE 에디터 초기화
+            let tinymceEditor;
+            tinymce.init({
+                selector: '#wysiwygEditor',
+                plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code fullscreen preview importcss quickbars template',
+                toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table template | align lineheight | numlist bullist indent outdent | emoticons charmap | fullscreen preview | removeformat',
+                setup: function(editor) {
+                    tinymceEditor = editor;
+                    
+                    // 에디터 내용 변경 시 HTML 코드 에디터에 반영
+                    editor.on('change', function() {
+                        editContent.value = editor.getContent();
+                    });
+                    
+                    // 도메인 경고 메시지 숨기기
+                    editor.on('init', function() {
+                        const alertBox = document.querySelector('.tox-notification--warning');
+                        if (alertBox) {
+                            alertBox.style.display = 'none';
+                        }
+                    });
+                },
+                height: 500,
+                language: 'ko_KR',
+                menubar: true,
+                image_advtab: true,
+                image_uploadtab: true,
+                quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote',
+                toolbar_mode: 'sliding',
+                contextmenu: 'link image table',
+                content_style: 'body { font-family: "Noto Sans KR", sans-serif; font-size: 16px; line-height: 1.6; }',
+                default_link_target: '_blank',
+                relative_urls: false,
+                remove_script_host: false,
+                convert_urls: false,
+                branding: false,
+                promotion: false
+            });
+            
+            // HTML 코드 에디터 내용 변경 시 TinyMCE에 반영
+            editContent.addEventListener('input', function() {
+                if (tinymceEditor) {
+                    tinymceEditor.setContent(editContent.value);
+                }
+            });
+            
+            // 탭 전환 시 에디터 동기화
+            visualTab.addEventListener('shown.bs.tab', function() {
+                if (tinymceEditor) {
+                    tinymceEditor.setContent(editContent.value);
+                }
+            });
+            
+            htmlTab.addEventListener('shown.bs.tab', function() {
+                if (tinymceEditor) {
+                    editContent.value = tinymceEditor.getContent();
+                }
+            });
+            
+            // 편집 모드 토글 버튼 이벤트 핸들러
+            editToggleBtn.addEventListener('click', function() {
+                const isEditMode = viewMode.classList.contains('d-none');
+                
+                if (isEditMode) {
+                    // 편집 모드 -> 보기 모드
+                    viewMode.classList.remove('d-none');
+                    editMode.classList.add('d-none');
+                    editBtnText.textContent = '편집하기';
+                } else {
+                    // 보기 모드 -> 편집 모드
+                    viewMode.classList.add('d-none');
+                    editMode.classList.remove('d-none');
+                    editBtnText.textContent = '편집 취소';
+                    
+                    // 기존 내용 로드
+                    editTitle.value = document.querySelector('#viewMode h2').textContent.trim();
+                    const contentHtml = document.querySelector('.post-content').innerHTML.trim();
+                    editContent.value = contentHtml;
+                    
+                    // TinyMCE 에디터에 내용 설정
+                    setTimeout(() => {
+                        if (tinymceEditor) {
+                            tinymceEditor.setContent(contentHtml);
+                        }
+                    }, 100);
+                }
+            });
+            
+            // 편집 취소 버튼 이벤트 핸들러
+            cancelEditBtn.addEventListener('click', function() {
+                viewMode.classList.remove('d-none');
+                editMode.classList.add('d-none');
+                editBtnText.textContent = '편집하기';
+            });
+            
+            // 저장 버튼 이벤트 핸들러
+            saveEditBtn.addEventListener('click', function() {
+                // 현재 활성화된 에디터의 내용 가져오기
+                let currentContent;
+                if (document.querySelector('#visual-editor').classList.contains('active')) {
+                    // TinyMCE 에디터가 활성화된 경우
+                    currentContent = tinymceEditor.getContent();
+                } else {
+                    // HTML 코드 에디터가 활성화된 경우
+                    currentContent = editContent.value.trim();
+                }
+                
+                // 입력 검증
+                if (!editTitle.value.trim() || !currentContent) {
+                    errorAlert.textContent = '제목과 내용은 필수 입력 항목입니다.';
+                    errorAlert.classList.remove('d-none');
+                    successAlert.classList.add('d-none');
+                    return;
+                }
+                
+                // 버튼 상태 변경
+                saveEditBtn.disabled = true;
+                editSpinner.classList.remove('d-none');
+                
+                // 알림 초기화
+                successAlert.classList.add('d-none');
+                errorAlert.classList.add('d-none');
+                
+                // 편집 내용 저장 API 호출
+                const formData = new FormData();
+                formData.append('title', editTitle.value.trim());
+                formData.append('content', currentContent);
+                
+                fetch('/edit', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 버튼 상태 복원
+                    saveEditBtn.disabled = false;
+                    editSpinner.classList.add('d-none');
+                    
+                    if (data.success) {
+                        // 성공 메시지 표시
+                        successAlert.textContent = data.message;
+                        successAlert.classList.remove('d-none');
+                        errorAlert.classList.add('d-none');
+                        
+                        // 페이지 새로고침 (변경된 내용 표시)
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        // 실패 메시지 표시
+                        errorAlert.textContent = data.message;
+                        errorAlert.classList.remove('d-none');
+                        successAlert.classList.add('d-none');
+                    }
+                })
+                .catch(error => {
+                    // 버튼 상태 복원
+                    saveEditBtn.disabled = false;
+                    editSpinner.classList.add('d-none');
+                    
+                    // 오류 메시지 표시
+                    errorAlert.textContent = '요청 중 오류가 발생했습니다: ' + error.message;
+                    errorAlert.classList.remove('d-none');
+                    successAlert.classList.add('d-none');
                 });
             });
         });

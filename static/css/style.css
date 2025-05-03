@@ -56,6 +56,17 @@ body {
     border-color: #1e7e34;
 }
 
+/* AI 재작성 관련 스타일 */
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+}
+
 /* 포스트 내용 스타일 */
 .post-content {
     line-height: 1.8;
@@ -98,4 +109,156 @@ body {
 /* 로딩 애니메이션 */
 .spinner-border {
     margin-right: 10px;
+}
+
+/* AI 재작성 성공 표시 */
+.rewritten-badge {
+    display: inline-block;
+    background-color: #17a2b8;
+    color: white;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+/* 포스트 내용 변경 애니메이션 */
+.content-changed {
+    animation: highlight 2s ease-in-out;
+}
+
+@keyframes highlight {
+    0% { background-color: rgba(23, 162, 184, 0.2); }
+    100% { background-color: transparent; }
+}
+
+/* 추천인과 초대코드 스타일 */
+.referrer-info {
+    background-color: rgba(23, 162, 184, 0.1);
+    border-left: 4px solid #17a2b8;
+    padding: 10px 15px;
+    margin: 15px 0;
+    border-radius: 0 5px 5px 0;
+}
+
+.code-highlight {
+    font-weight: bold;
+    color: #17a2b8;
+    background-color: rgba(23, 162, 184, 0.1);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+/* 편집 모드 스타일 */
+#editContent {
+    font-family: monospace;
+    line-height: 1.5;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    min-height: 300px;
+}
+
+.edit-buttons {
+    margin-top: 20px;
+}
+
+.card-header .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.card-header .btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 뱃지 스타일 */
+.badge {
+    font-weight: normal;
+    padding: 0.4em 0.6em;
+    margin-right: 5px;
+}
+
+/* 편집 모드 전환 애니메이션 */
+#viewMode, #editMode {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.fade-in {
+    opacity: 1;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* WYSIWYG 에디터 스타일 */
+.tox-tinymce {
+    border-radius: 0.25rem;
+    border-color: #ced4da !important;
+}
+
+.tox .tox-toolbar__group {
+    border-right-color: #ced4da !important;
+}
+
+/* 탭 스타일 커스터마이징 */
+.nav-tabs .nav-link {
+    color: #495057;
+    border-radius: 0.25rem 0.25rem 0 0;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: 500;
+    border-color: #dee2e6 #dee2e6 #fff;
+    background-color: #fff;
+    color: #0d6efd;
+}
+
+.tab-content {
+    border: 1px solid #dee2e6;
+    border-top: none;
+    padding: 1rem;
+    background-color: #fff;
+    border-radius: 0 0 0.25rem 0.25rem;
+}
+
+/* 탭 사이의 전환 애니메이션 */
+.tab-pane {
+    transition: opacity 0.15s linear;
+}
+
+.tab-pane.fade {
+    opacity: 0;
+}
+
+.tab-pane.fade.show {
+    opacity: 1;
+}
+
+/* TinyMCE 경고 메시지 숨기기 */
+.tox-notification--warning {
+    display: none !important;
+}
+
+/* 에디터 내 이미지 관련 스타일 */
+.mce-content-body img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1em auto;
+}
+
+/* 에디터 내 테이블 관련 스타일 */
+.mce-content-body table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+.mce-content-body table td,
+.mce-content-body table th {
+    border: 1px solid #ddd;
+    padding: 8px;
 } 
