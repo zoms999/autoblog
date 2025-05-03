@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 개발 환경
+.env
+.venv
+venv/
+ENV/
+
+# 구글 API 인증 파일
+client_secret.json
+token.json
+
+# 로그 파일
+*.log
+
+# 임시 폴더
+temp/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo 
